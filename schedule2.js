@@ -132,15 +132,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         // Удаляем предыдущую логику очистки, просто оставляем текст как есть
                         // hall = hall.replace(/ЗАЛ\s+/gi, '').trim();
 
-                        // Поиск статуса "набор" - теперь проверяем ячейку СРАЗУ ПОСЛЕ названия (idx + 2)
-                        let isNabor = false;
-                        const naborCell = (classRow[idx + 2] || '').trim().toLowerCase();
-                        if (naborCell.includes('набор')) isNabor = true;
-
-                        // Если не нашли в специальной ячейке, проверяем все связанные ячейки на всякий случай
-                        if (!isNabor) {
-                            const combinedText = `${id} ${title} ${teacher} ${naborCell}`.toLowerCase();
-                            if (combinedText.includes('набор')) isNabor = true;
+                        // Поиск статуса "набор" или свободных мест
+                        let statusText = '';
+                        const naborCell = (classRow[idx + 2] || '').trim();
+                        
+                        if (naborCell) {
+                            statusText = naborCell;
+                        } else {
+                            // Если в основной ячейке пусто, проверяем другие на наличие слова "набор"
+                            const combinedText = `${id} ${title} ${teacher}`.toLowerCase();
+                            if (combinedText.includes('набор')) statusText = 'набор';
                         }
 
                         // Поиск длительности
@@ -166,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         if (title || teacher || id) {
-                            items.push({ id, title, teacher, hall, duration, isNabors: isNabor });
+                            items.push({ id, title, teacher, hall, duration, status: statusText });
                         }
                     }
 
@@ -195,13 +196,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     day.items.forEach(item => {
                         const bgStyle = getBgStyle(item.id || item.title);
+                        
+                        // Определяем цвет плашки статуса
+                         let statusBadge = '';
+                         if (item.status) {
+                             const s = item.status.toLowerCase();
+                             let badgeClass = 'bg-emerald-500/80'; // По умолчанию зеленый (набор)
+                             
+                             if (s.includes('набор')) {
+                                 badgeClass = 'bg-emerald-500/80';
+                             } else if (/\d/.test(s)) {
+                                 badgeClass = 'bg-amber-500/80';
+                             } else {
+                                 badgeClass = 'bg-blue-500/80';
+                             }
+                             
+                             statusBadge = `<span class="shrink-0 ${badgeClass} backdrop-blur-sm text-[7px] font-black px-1.5 py-0.5 rounded-md text-white uppercase tracking-tighter shadow-sm border border-white/10">${item.status}</span>`;
+                         }
+
                         html += `
                             <div class="relative overflow-hidden rounded-lg p-2 shadow-lg border hover:border-white/50 transition-colors" style="${bgStyle}">
                                 <div class="flex items-start justify-between gap-1 mb-1">
                                     <span class="text-[11px] font-black text-white leading-tight uppercase tracking-tight">
                                         ${item.id ? item.id + ' • ' : ''}${item.title}
                                     </span>
-                                    ${item.isNabors ? '<span class="shrink-0 bg-emerald-500 text-[8px] font-black px-1 py-0.5 rounded text-white uppercase tracking-tighter">набор</span>' : ''}
+                                    ${statusBadge}
                                 </div>
                                 <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-white/90 font-bold leading-tight">
                                     <span class="opacity-100">${item.teacher}</span>
