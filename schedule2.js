@@ -134,14 +134,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         // Поиск статуса "набор" или свободных мест
                         let statusText = '';
-                        const naborCell = (classRow[idx + 2] || '').trim();
                         
-                        if (naborCell) {
-                            statusText = naborCell;
-                        } else {
-                            // Если в основной ячейке пусто, проверяем другие на наличие слова "набор"
+                        // Проверяем ячейки в ряду с названием (от названия до начала следующего дня)
+                        for (let k = idx + 2; k < idx + 6; k++) {
+                            const val = (classRow[k] || '').trim();
+                            if (val && val.length > 1 && val.length < 25) {
+                                const lowVal = val.toLowerCase();
+                                // Если ячейка содержит ключевые слова или цифры (кроме ID группы)
+                                if (lowVal.includes('набор') || lowVal.includes('мест') || lowVal.includes('есть') || (/\d/.test(val) && val.length <= 3)) {
+                                    // Исключаем ID групп (типа C-10 или просто 128)
+                                    if (!val.match(/^[A-Zа-я]?-\d+$/i) && val !== id && val !== title) {
+                                        statusText = val;
+                                        if (val.match(/^\d+$/)) statusText += ' мест';
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Если ничего не нашли в спец. ячейках, ищем в тексте
+                        if (!statusText) {
                             const combinedText = `${id} ${title} ${teacher}`.toLowerCase();
                             if (combinedText.includes('набор')) statusText = 'набор';
+                            else if (combinedText.includes('мест')) {
+                                const match = combinedText.match(/(\d+)\s*мест/);
+                                if (match) statusText = match[0];
+                            }
                         }
 
                         // Поиск длительности
@@ -201,17 +219,17 @@ document.addEventListener('DOMContentLoaded', () => {
                          let statusBadge = '';
                          if (item.status) {
                              const s = item.status.toLowerCase();
-                             let badgeClass = 'bg-emerald-500/80'; // По умолчанию зеленый (набор)
+                             let badgeClass = 'bg-emerald-600'; // Насыщенный зеленый
                              
                              if (s.includes('набор')) {
-                                 badgeClass = 'bg-emerald-500/80';
-                             } else if (/\d/.test(s)) {
-                                 badgeClass = 'bg-amber-500/80';
+                                 badgeClass = 'bg-emerald-600';
+                             } else if (/\d/.test(s) || s.includes('мест')) {
+                                 badgeClass = 'bg-amber-600';
                              } else {
-                                 badgeClass = 'bg-blue-500/80';
+                                 badgeClass = 'bg-blue-600';
                              }
                              
-                             statusBadge = `<span class="shrink-0 ${badgeClass} backdrop-blur-sm text-[7px] font-black px-1.5 py-0.5 rounded-md text-white uppercase tracking-tighter shadow-sm border border-white/10">${item.status}</span>`;
+                             statusBadge = `<span class="shrink-0 ${badgeClass} text-[9px] font-bold px-2 py-0.5 rounded-full text-white uppercase tracking-tight shadow-md border border-white/20 whitespace-nowrap">${item.status}</span>`;
                          }
 
                         html += `
